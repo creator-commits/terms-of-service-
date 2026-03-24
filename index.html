@@ -309,26 +309,9 @@ async function sendForm(type) {
   btn.textContent = 'Sending…';
   btn.disabled = true;
 
-  // Fallback to mailto if token not injected yet
-  if (!GITHUB_TOKEN || GITHUB_TOKEN === '%%GH_TOKEN%%' || GITHUB_TOKEN.length < 10) {
-    var subj = encodeURIComponent((payload.type === 'Support' ? 'Support: ' : 'Copyright: ') + payload.subject);
-    var body = encodeURIComponent(
-      'Name: ' + payload.name + '\n' +
-      'From: ' + payload.email + '\n' +
-      (payload.reqtype !== '—' ? 'Request: ' + payload.reqtype + '\n' : '') +
-      (payload.work !== '—' ? 'Work: ' + payload.work + '\n' : '') +
-      (payload.link !== '—' ? 'Link: ' + payload.link + '\n' : '') +
-      '\nMessage:\n' + payload.message
-    );
-    document.getElementById(formId).style.display = 'none';
-    document.getElementById(successId).style.display = 'block';
-    setTimeout(function(){
-      window.location.href = 'mailto:garbileukpeh@creator-sai.com?subject=' + subj + '&body=' + body;
-    }, 800);
-    btn.textContent = 'Send message';
-    btn.disabled = false;
-    return;
-  }
+  // Token check
+  console.log('Token length:', GITHUB_TOKEN ? GITHUB_TOKEN.length : 0);
+  console.log('Repo:', GITHUB_REPO);
 
   try {
     var res = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/dispatches', {
@@ -346,10 +329,11 @@ async function sendForm(type) {
       document.getElementById(successId).style.display = 'block';
     } else {
       // Show specific error based on status code
-      var msg = 'Something went wrong (status ' + res.status + ').';
-      if (res.status === 401) msg = 'Authentication failed — check GH_PAT secret has correct permissions.';
-      if (res.status === 404) msg = 'Repo not found — check GH_REPO value is correct.';
-      if (res.status === 422) msg = 'Validation error — check the workflow file exists in the repo.';
+      var msg = 'Error ' + res.status + ': ';
+      if (res.status === 401) msg += 'Token authentication failed. Fine-grained PAT may not support repository_dispatch — try a Classic token instead.';
+      else if (res.status === 404) msg += 'Repo not found — check repo name.';
+      else if (res.status === 422) msg += 'Workflow file missing or invalid.';
+      else msg += 'Unexpected error.';
       throw new Error(msg);
     }
   } catch(e) {
