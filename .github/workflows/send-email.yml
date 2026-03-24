@@ -8,7 +8,6 @@ on:
 
 jobs:
 
-  # ── Job 1: Send email when form submitted ──
   send-email:
     if: github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
@@ -39,30 +38,41 @@ jobs:
             ---
             Sent from [@]Creators Terms of Service page
 
-  # ── Job 2: Inject secrets + deploy ──
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Inject secrets
         run: |
           sed -i "s|%%GH_TOKEN%%|${{ secrets.GH_PAT }}|g" index.html
           sed -i "s|%%GH_REPO%%|${{ github.repository }}|g" index.html
+          echo "Injection done"
 
-      - name: Commit injected file to gh-pages branch
+      - name: Deploy to pages-deploy
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B gh-pages
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Copy built file
+          cp index.html /tmp/index.html
+          
+          # Switch to pages-deploy branch
+          git fetch origin pages-deploy || true
+          git checkout pages-deploy 2>/dev/null || git checkout --orphan pages-deploy
+          
+          # Clean and replace with built file
+          git rm -rf . --quiet || true
+          cp /tmp/index.html index.html
+          
           git add index.html
-          git commit -m "Deploy with injected config"
-          git push origin gh-pages --force
+          git commit -m "Deploy $(date +%Y-%m-%d\ %H:%M)"
+          git push origin pages-deploy --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
