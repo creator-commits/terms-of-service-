@@ -309,6 +309,20 @@ async function sendForm(type) {
   btn.textContent = 'Sending…';
   btn.disabled = true;
 
+  // Debug: check token and repo are injected
+  if (!GITHUB_TOKEN || GITHUB_TOKEN === '%%GH_TOKEN%%') {
+    alert('Configuration error: token not set. Please check deployment.');
+    btn.textContent = 'Send message';
+    btn.disabled = false;
+    return;
+  }
+  if (!GITHUB_REPO || GITHUB_REPO === '%%GH_REPO%%') {
+    alert('Configuration error: repo not set. Please check deployment.');
+    btn.textContent = 'Send message';
+    btn.disabled = false;
+    return;
+  }
+
   try {
     var res = await fetch('https://api.github.com/repos/' + GITHUB_REPO + '/dispatches', {
       method: 'POST',
@@ -324,13 +338,18 @@ async function sendForm(type) {
       document.getElementById(formId).style.display = 'none';
       document.getElementById(successId).style.display = 'block';
     } else {
-      throw new Error('status ' + res.status);
+      // Show specific error based on status code
+      var msg = 'Something went wrong (status ' + res.status + ').';
+      if (res.status === 401) msg = 'Authentication failed — check GH_PAT secret has correct permissions.';
+      if (res.status === 404) msg = 'Repo not found — check GH_REPO value is correct.';
+      if (res.status === 422) msg = 'Validation error — check the workflow file exists in the repo.';
+      throw new Error(msg);
     }
   } catch(e) {
     btn.textContent = 'Send message';
     btn.disabled = false;
-    alert('Something went wrong. Please try again.');
-    console.error(e);
+    alert(e.message || 'Something went wrong. Please try again.');
+    console.error('Form error:', e);
   }
 }
 </script>
