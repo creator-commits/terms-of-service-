@@ -272,8 +272,8 @@ function openModal(id){ document.getElementById(id).classList.add('open'); docum
 function closeModal(e,id){ if(e.target===document.getElementById(id)){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; } }
 
 // ── CONFIG (filled automatically by GitHub Pages deployment) ──
-window.GH_TOKEN = 'REPLACE_WITH_GH_PAT';
-window.GH_REPO  = 'REPLACE_WITH_YOUR_USERNAME/terms-creator-sai';
+window.GH_TOKEN = '%%GH_TOKEN%%';
+window.GH_REPO  = '%%GH_REPO%%';
 
 async function sendForm(type) {
   var GITHUB_TOKEN  = window.GH_TOKEN;   // set via secrets — see README
