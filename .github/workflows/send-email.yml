@@ -59,6 +59,9 @@ jobs:
         run: |
           sed -i "s|%%GH_TOKEN%%|${{ secrets.GH_PAT }}|g" index.html
           sed -i "s|%%GH_REPO%%|${{ github.repository }}|g" index.html
+          echo "=== Checking injection ==="
+          grep -o "GH_TOKEN\|GH_REPO\|%%.*%%" index.html || echo "✅ All placeholders replaced"
+          grep "window.GH_TOKEN" index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
