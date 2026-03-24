@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  # ── Job 1: Send email when form is submitted ──
+  # ── Job 1: Send email when form submitted ──
   send-email:
     if: github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
@@ -39,34 +39,26 @@ jobs:
             ---
             Sent from [@]Creators Terms of Service page
 
-  # ── Job 2: Build page (inject secrets) and deploy to GitHub Pages ──
+  # ── Job 2: Inject secrets + deploy to gh-pages branch ──
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject secrets into index.html
+      - name: Inject secrets
         run: |
-          sed -i "s|%%GH_TOKEN%%|${{ secrets.GH_PAT }}|g" index.html
-          sed -i "s|%%GH_REPO%%|${{ github.repository }}|g" index.html
+          TOKEN="${{ secrets.GH_PAT }}"
+          REPO="${{ github.repository }}"
+          sed -i "s|%%GH_TOKEN%%|${TOKEN}|g" index.html
+          sed -i "s|%%GH_REPO%%|${REPO}|g" index.html
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
