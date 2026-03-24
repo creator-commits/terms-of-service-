@@ -39,7 +39,7 @@ jobs:
             ---
             Sent from [@]Creators Terms of Service page
 
-  # ── Job 2: Inject secrets + deploy to gh-pages branch ──
+  # ── Job 2: Inject secrets + deploy ──
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -48,6 +48,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Inject secrets
         run: |
@@ -59,6 +61,8 @@ jobs:
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.GH_PAT }}
           publish_dir: .
           publish_branch: gh-pages
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
