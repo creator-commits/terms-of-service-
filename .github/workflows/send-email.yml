@@ -45,24 +45,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
 
       - name: Inject secrets
         run: |
-          TOKEN="${{ secrets.GH_PAT }}"
-          REPO="${{ github.repository }}"
-          sed -i "s|%%GH_TOKEN%%|${TOKEN}|g" index.html
-          sed -i "s|%%GH_REPO%%|${REPO}|g" index.html
+          sed -i "s|%%GH_TOKEN%%|${{ secrets.GH_PAT }}|g" index.html
+          sed -i "s|%%GH_REPO%%|${{ github.repository }}|g" index.html
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GH_PAT }}
-          publish_dir: .
-          publish_branch: gh-pages
-          user_name: github-actions[bot]
-          user_email: github-actions[bot]@users.noreply.github.com
+      - name: Commit injected file to gh-pages branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B gh-pages
+          git add index.html
+          git commit -m "Deploy with injected config"
+          git push origin gh-pages --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
