@@ -309,15 +309,22 @@ async function sendForm(type) {
   btn.textContent = 'Sending…';
   btn.disabled = true;
 
-  // Debug: check token and repo are injected
-  if (!GITHUB_TOKEN || GITHUB_TOKEN === '%%GH_TOKEN%%') {
-    alert('Configuration error: token not set. Please check deployment.');
-    btn.textContent = 'Send message';
-    btn.disabled = false;
-    return;
-  }
-  if (!GITHUB_REPO || GITHUB_REPO === '%%GH_REPO%%') {
-    alert('Configuration error: repo not set. Please check deployment.');
+  // Fallback to mailto if token not injected yet
+  if (!GITHUB_TOKEN || GITHUB_TOKEN === '%%GH_TOKEN%%' || GITHUB_TOKEN.length < 10) {
+    var subj = encodeURIComponent((payload.type === 'Support' ? 'Support: ' : 'Copyright: ') + payload.subject);
+    var body = encodeURIComponent(
+      'Name: ' + payload.name + '\n' +
+      'From: ' + payload.email + '\n' +
+      (payload.reqtype !== '—' ? 'Request: ' + payload.reqtype + '\n' : '') +
+      (payload.work !== '—' ? 'Work: ' + payload.work + '\n' : '') +
+      (payload.link !== '—' ? 'Link: ' + payload.link + '\n' : '') +
+      '\nMessage:\n' + payload.message
+    );
+    document.getElementById(formId).style.display = 'none';
+    document.getElementById(successId).style.display = 'block';
+    setTimeout(function(){
+      window.location.href = 'mailto:garbileukpeh@creator-sai.com?subject=' + subj + '&body=' + body;
+    }, 800);
     btn.textContent = 'Send message';
     btn.disabled = false;
     return;
