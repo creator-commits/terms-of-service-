@@ -1,11 +1,16 @@
-name: Send Contact Form Email
+name: Build and Deploy
 
 on:
+  push:
+    branches: [main]
   repository_dispatch:
     types: [contact_form]
 
 jobs:
+
+  # ── Job 1: Send email when form is submitted ──
   send-email:
+    if: github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Send Email
@@ -20,16 +25,48 @@ jobs:
           from: ${{ secrets.MAIL_USERNAME }}
           subject: "[${{ github.event.client_payload.type }}] ${{ github.event.client_payload.subject }}"
           body: |
-            Type: ${{ github.event.client_payload.type }}
-            Name: ${{ github.event.client_payload.name }}
-            From: ${{ github.event.client_payload.email }}
+            Type:    ${{ github.event.client_payload.type }}
+            Name:    ${{ github.event.client_payload.name }}
+            From:    ${{ github.event.client_payload.email }}
             Subject: ${{ github.event.client_payload.subject }}
-            Request Type: ${{ github.event.client_payload.reqtype }}
-            Work: ${{ github.event.client_payload.work }}
-            Link: ${{ github.event.client_payload.link }}
+            Request: ${{ github.event.client_payload.reqtype }}
+            Work:    ${{ github.event.client_payload.work }}
+            Link:    ${{ github.event.client_payload.link }}
 
             Message:
             ${{ github.event.client_payload.message }}
 
             ---
             Sent from [@]Creators Terms of Service page
+
+  # ── Job 2: Build page (inject secrets) and deploy to GitHub Pages ──
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject secrets into index.html
+        run: |
+          sed -i "s|%%GH_TOKEN%%|${{ secrets.GH_PAT }}|g" index.html
+          sed -i "s|%%GH_REPO%%|${{ github.repository }}|g" index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
